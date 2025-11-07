@@ -1,0 +1,21 @@
+# Kerstin Känzig
+# email: kerstin.kaenzig@unibe.ch
+# 10.09.2025
+
+#Input: Folder with all *amr.sorted.bed files
+
+#create tab-separated lists showing each isolate and the sequential order of ARGs 
+{ 
+  echo -e "sample\tAMR"           
+  for f in *.bed; do
+    sample="${f%.bed}"
+    genes=$(awk 'NF>=4 && $1!~/^#/ {print $4}' "$f" | paste -sd $'\t' -)
+    printf "%s\t%s\n" "$sample" "$genes"
+  done
+} > amr_list.tsv
+
+# output
+amr_list.tsv
+
+# anchor for gadX
+done manually in excel
