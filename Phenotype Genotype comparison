@@ -1,0 +1,34 @@
+# Kerstin Känzig
+# email: kerstin.kaenzig@unibe.ch
+# 07.10.2025
+
+#Input files:
+1528.gff, 1528.fsa
+
+# extract folP gene
+grep -i "folP" 1528.gff | awk -v OFS="\t" '{print $1,$4-1,$5,"folP",".",$7}' > 1528folP.bed
+bedtools getfasta -fi 1528.fsa -bed 1528folP.bed -s -name > 1528folP_full.fna
+
+# extract acrR gene
+grep -i "acrR" 1528.gff | awk -v OFS="\t" '{print $1,$4-1,$5,"acrR",".",$7}' > 1528acrR.bed
+bedtools getfasta -fi 1528.fsa -bed 1528acrR.bed -s -name > 1528acrR_full.fna
+
+# extract marR gene
+grep -i "marR" 1528.gff | awk -v OFS="\t" '{print $1,$4-1,$5,"marR",".",$7}' > 1528marR.bed
+bedtools getfasta -fi 1528.fsa -bed 1528marR.bed -s -name > 1528marR_full.fna
+
+# output files
+ls
+1528folP.bed, 1528folP_full.fna, 1528acrR.bed, 1528acrR_full.fna, 1528marR.bed, 1528marR_full.fna
+
+## repeat for other samples
+
+# Chimera X commands acrR visualization
+# fetch acrR structure form PDB
+open 2qop 
+
+#select residue 210
+select #1:.210
+
+#show contacts made by residue 210
+contacts #1:210 restrict #2
