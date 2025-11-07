@@ -1,0 +1,80 @@
+# Kerstin Känzig
+# email: kerstin.kaenzig@unibe.ch
+# 24.11.2025
+
+
+#input files 
+622result_tab.tsv, 622mgefinder_result.tsv
+
+## convert plasmidfinder result into BED file
+
+# create shell script file for easier editing of the code. 
+touch plasmidfinder.sh
+
+# insert code into shell scrip file
+
+awk -F'\t' 'BEGIN{OFS="\t"}
+NR==1{
+  for(i=1;i<=NF;i++){
+    k=tolower($i)
+    if(k=="plasmid") n=i
+    else if(k=="contig") c=i
+    else if(k ~ /^position/) p=i
+  }
+  next
+}
+{
+  cont=$c; sub(/ .*/,"",cont)                 # keep only contig id before first space
+  nsplit=split($p, A, /[^0-9]+/)              # split positions on non-digits
+  if(nsplit>=2){
+    s=A[1]-1; e=A[2]; if(s>e){t=s;s=e;e=t}    # 0-based start, ensure s<e
+    name=$n; gsub(/[[:space:]]+/,"_",name)
+    print cont, s, e, name, 0, "."
+  }
+}' 622results_tab.tsv | sort -k1,1 -k2,2n > 622plasmidfinder.bed
+
+#run file
+bash plasmidfinder.sh
+
+#repeat for other samples
+
+## convert Mobile element finder results into BED files
+# automated workflow for all .tsv files in the folder
+
+touch MGEfinder.sh
+
+for f in *.tsv; do
+  base=${f%.tsv}
+  awk -F'\t' -v OFS='\t' '
+    BEGIN{ IGNORECASE=1; c=s=e=n=0 }
+    NR==1{
+      # auto-detect columns by header names
+      for(i=1;i<=NF;i++){
+        h=$i; gsub(/^[[:space:]]+|[[:space:]]+$/,"",h)
+        hl=tolower(h)
+        if (!c && hl=="contig")               c=i
+        if (!s && (hl=="start" || hl=="beg")) s=i
+        if (!e && (hl=="stop"  || hl=="end")) e=i
+        if (!n && hl=="name")                 n=i
+      }
+      next
+    }
+    {
+      cont=$c; sub(/ .*/,"",cont)         # keep token before first space
+      st=$s; en=$e
+      if (st=="" || en=="") next
+      if (st>en) { t=st; st=en; en=t }    # ensure st<en
+      st0=st-1                             # BED is 0-based start, 1-based end
+      name=$n; gsub(/[[:space:]]+/,"_",name)
+      print cont, st0, en, name, 0, "."
+    }
+  ' "$f" | sort -k1,1 -k2,2n > "${base}.bed" && echo "Wrote ${base}.bed"
+done
+
+bash MGEfinder.sh
+
+
+
+## search for speficic IS in whole folder of Integron finder output .bed files
+
+grep -l "ISSfl8" *.bed
