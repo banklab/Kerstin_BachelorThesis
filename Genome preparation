@@ -1,0 +1,48 @@
+# Kerstin Känzig
+# email: kerstin.kaenzig@unibe.ch
+# 09.09.2025
+
+# input files:
+622.fsa, 622.gff, 622_card.tsv
+
+# standardization of fasta headers replace "/" with "_"
+sed 's/\//_/g' 622.fsa > 622cleaned.fasta
+
+## conversion of card.tsv files and annotation.gff files into .bed files
+
+# turn 622.gff into bed file. Remove FASTA sequence at end and remove comment line at beginning.
+awk 'BEGIN{FS=OFS="\t"; print "contig","start","end","name","score","strand"} 
+     /^#*FASTA/{exit}
+     /^#/ {next}
+     {
+       contig=$1; start=$4-1; end=$5;
+       name=".";
+       if ($9 ~ /gene=/) {
+         split($9,attrs,";");
+         for(i in attrs){
+           if(attrs[i] ~ /^gene=/){
+             sub(/^gene=/,"",attrs[i]);
+             name=attrs[i];
+           }
+         }
+       }
+       score=($6=="."?0:$6); strand=($7==""?"+" : $7);
+       gsub(/[[:space:]]+/,"_",name);
+       print contig, start, end, name, score, strand
+     }' 622.gff > 622annotation.bed 
+
+# turn 622_card.tsv into bed file
+awk -F'\t' 'BEGIN{OFS="\t"; print "contig","start","end","name","score","strand"}
+NR>1 {contig=$2; start=$3-1; end=$4; name=$6; strand=$5; score=0; gsub(/[[:space:]]+/,"_",name); print contig, start, end, name, score, strand}' 622_card.tsv > 622amr.bed
+
+# sort both bed files. All features of same contig stay together, features are ordered left-to-right along the contig
+for f in 622annotation.bed 622amr.bed; do           
+  sort -k1,1 -k2,2n "$f" > "${f%.bed}.sorted.bed"
+done
+
+#output files
+ls
+622.fsa				622_card.tsv			622amr.sorted.bed		622annotation.sorted.bed
+622.gff				622amr.bed			622annotation.bed		622cleaned.fasta
+
+#repeat same workflow with other samples
